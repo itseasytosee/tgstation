@@ -23,6 +23,7 @@
 	var/current_tick_amount = 0
 	var/radiation_count = 0
 	var/grace = RAD_GEIGER_GRACE_PERIOD
+	var/toggle_sound = 'sound/mecha/mechmove03.ogg'
 	var/datum/looping_sound/geiger/soundloop
 
 /obj/item/clothing/head/helmet/space/hardsuit/Initialize()
