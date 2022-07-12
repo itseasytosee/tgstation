@@ -74,6 +74,8 @@
 
 	add_seclight_point()
 
+/obj/item/gun/ComponentInitialize()
+	AddComponent(/datum/component/aiming)
 /obj/item/gun/Destroy()
 	if(isobj(pin)) //Can still be the initial path, then we skip
 		QDEL_NULL(pin)
@@ -180,7 +182,7 @@
 		for(var/obj/O in contents)
 			O.emp_act(severity)
 
-/obj/item/gun/attack_secondary(mob/living/victim, mob/living/user, params)
+/obj/item/gun/attack_secondary(mob/living/victim, mob/living/user, params, aimed)
 	if (user.GetComponent(/datum/component/gunpoint))
 		to_chat(user, span_warning("You are already holding someone up!"))
 		return SECONDARY_ATTACK_CANCEL_ATTACK_CHAIN
@@ -322,7 +324,7 @@
 	update_appearance()
 	return TRUE
 
-/obj/item/gun/proc/process_fire(atom/target, mob/living/user, message = TRUE, params = null, zone_override = "", bonus_spread = 0)
+/obj/item/gun/proc/process_fire(atom/target, mob/living/user, message = TRUE, params = null, zone_override = "", bonus_spread = 0, aimed = FALSE)
 	if(user)
 		SEND_SIGNAL(user, COMSIG_MOB_FIRED_GUN, src, target, params, zone_override)
 
@@ -361,7 +363,7 @@
 					to_chat(user, span_warning("[src] is lethally chambered! You don't want to risk harming anyone..."))
 					return
 			sprd = round((rand(0, 1) - 0.5) * DUALWIELD_PENALTY_EXTRA_MULTIPLIER * (randomized_gun_spread + randomized_bonus_spread))
-			before_firing(target,user)
+			before_firing(target,user, aimed)
 			if(!chambered.fire_casing(target, user, params, , suppressed, zone_override, sprd, src))
 				shoot_with_empty_chamber(user)
 				return
@@ -551,7 +553,10 @@
 	pin = new /obj/item/firing_pin
 
 //Happens before the actual projectile creation
-/obj/item/gun/proc/before_firing(atom/target,mob/user)
+/obj/item/gun/proc/before_firing(atom/target,mob/user,aimed)
+	if(aimed && chambered?.loaded_projectile)
+		chambered.loaded_projectile.speed = initial(chambered.loaded_projectile.speed) *= 0.75
+		chambered.loaded_projectile.damage = initial(chambered.loaded_projectile.damage) *= 1.25
 	return
 
 #undef FIRING_PIN_REMOVAL_DELAY
