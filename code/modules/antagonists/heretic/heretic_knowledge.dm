@@ -15,6 +15,8 @@
 	var/desc = "Basic knowledge of forbidden arts."
 	/// What's shown to the heretic when the knowledge is aquired
 	var/gain_text
+	/// What span the gain text is in
+	var/gain_span = "warning"
 	/// The abstract parent type of the knowledge, used in determine mutual exclusivity in some cases
 	var/datum/heretic_knowledge/abstract_parent_type = /datum/heretic_knowledge
 	/// If TRUE, populates the banned_knowledge list of every other subtype of this knowledge's abstract_parent_type
@@ -56,7 +58,7 @@
 	SHOULD_CALL_PARENT(TRUE)
 
 	if(gain_text)
-		to_chat(user, span_warning("[gain_text]"))
+		to_chat(user, ("<span class='[gain_span]'>[gain_text]</span>"))
 	on_gain(user)
 
 /**

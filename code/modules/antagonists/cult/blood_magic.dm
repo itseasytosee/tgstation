@@ -407,6 +407,20 @@
 
 		user.mob_light(_range = 3, _color = LIGHT_COLOR_BLOOD_MAGIC, _duration = 0.2 SECONDS)
 
+		if(HAS_TRAIT(target, TRAIT_HERETIC_CULT_DEFENSE) && !target.stat)
+			target.mob_light(_range = 3, _color = LIGHT_COLOR_PURPLE, _duration = 0.3 SECONDS)
+			user.visible_message(span_warning("[target] counters [user]'s attack with a burst of unholy energy, sending [user] flying and scorching them both!"), \
+			span_cultbold("A viloent burst of energy reacts with your [src], sending you flying and scorching you!"))
+			to_chat(user, span_cultitalic("\"Your quarry possess strong eldritch powers, you'll have to dispatch them another way.\""))
+			to_chat(user)
+			playsound(get_turf(user), 'sound/magic/repulse.ogg', 100)
+			var/turf/thrownat = get_ranged_target_turf_direct(target, user, 3, rand(-10, 10))
+			user.throw_at(thrownat, 3, 3, null, TRUE, force = MOVE_FORCE_OVERPOWERING)
+			user.Paralyze(20)
+			target.apply_damage(10, BURN)
+			user.apply_damage(10, BURN)
+			uses--
+			return ..()
 		if(target.can_block_magic())
 			to_chat(user, span_warning("The spell had no effect!"))
 		else

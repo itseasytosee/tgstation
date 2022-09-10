@@ -426,6 +426,11 @@ Remember to update _globalvars/traits.dm if you're adding/removing/renaming trai
 /// Item still allows you to examine items while blind and actively held.
 #define TRAIT_BLIND_TOOL "blind_tool"
 
+/// Gives a defence against cult stun
+#define TRAIT_HERETIC_CULT_DEFENSE "heretic_cult_defence"
+/// Allows the use of cult items
+#define TRAIT_FAKE_CULT "fake_cult"
+
 // METABOLISMS
 // Various jobs on the station have historically had better reactions
 // to various drinks and foodstuffs. Security liking donuts is a classic

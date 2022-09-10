@@ -41,6 +41,8 @@
 	var/total_sacrifices = 0
 	/// A list of TOTAL how many high value sacrifices completed.
 	var/high_value_sacrifices = 0
+	/// How many nar-sian cultists the heretic has sacrificed
+	var/blood_cult_level = 0
 	/// Lazy assoc list of [weakrefs to humans] to [image previews of the human]. Humans that we have as sacrifice targets.
 	var/list/mob/living/carbon/human/sac_targets
 	/// Whether we're drawing a rune or not
@@ -65,6 +67,7 @@
 		PATH_ASH = "white",
 		PATH_VOID = "blue",
 		PATH_BLADE = "label", // my favorite color is label
+		PATH_CULT = "red",
 	)
 
 	data["charges"] = knowledge_points
