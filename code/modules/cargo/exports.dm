@@ -51,6 +51,10 @@ Then the player gets the profit from selling his own wasted time.
 		if(!dry_run && (sold || delete_unsold))
 			if(ismob(thing))
 				thing.investigate_log("deleted through cargo export", INVESTIGATE_CARGO)
+				var/mob/hostage = thing
+				if(hostage.stat < DEAD && hostage.mind)
+					hostage.mind.pirate_kidnapped = TRUE
+
 			to_delete += thing
 
 	for(var/atom/movable/thing as anything in to_delete)

@@ -410,6 +410,12 @@
 	var/mob/M = C.mob
 	if(M.mind && !isnewplayer(M))
 		if(M.stat != DEAD && !isbrain(M))
+			if(mind.force_escaped)
+				parts += "<div class='panel greenborder'>"
+				parts += span_greentext("You managed to survive the events on [station_name()] as [M.real_name].")
+		else if(pirate_kidnapped)
+			parts += "<div class='panel redborder'>"
+			parts += span_redtext("HOLY FUCK DUDE YOU GOT KIDNAPPED BY PIRATES")
 			if(EMERGENCY_ESCAPED_OR_ENDGAMED)
 				if(!M.onCentCom() && !M.onSyndieBase())
 					parts += "<div class='panel stationborder'>"
@@ -420,7 +426,6 @@
 			else
 				parts += "<div class='panel greenborder'>"
 				parts += span_greentext("You managed to survive the events on [station_name()] as [M.real_name].")
-
 		else
 			parts += "<div class='panel redborder'>"
 			parts += span_redtext("You did not survive the events on [station_name()]...")

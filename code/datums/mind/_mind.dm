@@ -75,6 +75,9 @@
 	/// If TRUE, the mob will always be considered "escaped" if they are alive and not exiled.
 	var/force_escaped = FALSE
 
+	/// If TRUE, the mind will be marked as kidnapped by pirates. This is mostly just significant for round end text
+	var/pirate_kidnapped = FALSE
+
 	var/list/learned_recipes //List of learned recipe TYPES.
 
 	///List of skills the user has received a reward for. Should not be used to keep track of currently known skills. Lazy list because it shouldnt be filled often
