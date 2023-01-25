@@ -8,6 +8,7 @@
 /proc/play_cinematic(datum/cinematic/cinematic_type, watchers, datum/callback/special_callback)
 	if(!ispath(cinematic_type, /datum/cinematic))
 		CRASH("play_cinematic called with a non-cinematic type. (Got: [cinematic_type])")
+
 	var/datum/cinematic/playing = new cinematic_type(watchers, special_callback)
 
 	if(watchers == world)

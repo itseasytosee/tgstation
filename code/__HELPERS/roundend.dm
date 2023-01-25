@@ -407,25 +407,29 @@
 
 /datum/controller/subsystem/ticker/proc/personal_report(client/C, popcount)
 	var/list/parts = list()
-	var/mob/M = C.mob
-	if(M.mind && !isnewplayer(M))
-		if(M.stat != DEAD && !isbrain(M))
-			if(mind.force_escaped)
+	var/mob/employee = C.mob
+	if(employee.mind && !isnewplayer(employee))
+		if(employee.stat != DEAD && !isbrain(employee))
+			if(employee.mind.force_escaped)
 				parts += "<div class='panel greenborder'>"
-				parts += span_greentext("You managed to survive the events on [station_name()] as [M.real_name].")
-		else if(pirate_kidnapped)
-			parts += "<div class='panel redborder'>"
-			parts += span_redtext("HOLY FUCK DUDE YOU GOT KIDNAPPED BY PIRATES")
-			if(EMERGENCY_ESCAPED_OR_ENDGAMED)
-				if(!M.onCentCom() && !M.onSyndieBase())
+				parts += span_greentext("You managed to survive the events on [station_name()] as [employee.real_name].")
+
+			else if(employee.mind.pirate_kidnapped)
+				parts += "<div class='panel redborder'>"
+				parts += span_redtext("You were sold into bondage by pirates, your fate remains unknown...")
+
+			else if(EMERGENCY_ESCAPED_OR_ENDGAMED)
+				if(!employee.onCentCom() && !employee.onSyndieBase())
 					parts += "<div class='panel stationborder'>"
 					parts += "<span class='marooned'>You managed to survive, but were marooned on [station_name()]...</span>"
 				else
 					parts += "<div class='panel greenborder'>"
-					parts += span_greentext("You managed to survive the events on [station_name()] as [M.real_name].")
+					parts += span_greentext("You managed to survive the events on [station_name()] as [employee.real_name].")
+
 			else
 				parts += "<div class='panel greenborder'>"
-				parts += span_greentext("You managed to survive the events on [station_name()] as [M.real_name].")
+				parts += span_greentext("You managed to survive the events on [station_name()] as [employee.real_name].")
+
 		else
 			parts += "<div class='panel redborder'>"
 			parts += span_redtext("You did not survive the events on [station_name()]...")

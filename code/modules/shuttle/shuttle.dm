@@ -756,15 +756,16 @@
  */
 /obj/docking_port/mobile/proc/intoTheSunset()
 	// Loop over mobs
+	var/list/mob/escapees = list()
 	for(var/turf/turfs as anything in return_turfs())
 		for(var/mob/living/sunset_mobs in turfs.get_all_contents())
-			// If they have a mind and they're not in the brig, they escaped
-			if(sunset_mobs.mind && !istype(turfs, /turf/open/floor/mineral/plastitanium/red/brig))
-				sunset_mobs.mind.force_escaped = TRUE
-			// Ghostize them and put them in nullspace stasis (for stat & possession checks)
-			sunset_mobs.notransform = TRUE
-			sunset_mobs.ghostize(FALSE)
-			sunset_mobs.moveToNullspace()
+			escapees += sunset_mobs
+	play_cinematic(/datum/cinematic/solo_escape, escapees)
+	for(var/mob/living/sunset_mobs in escapees)
+		sunset_mobs.mind.force_escaped = TRUE
+		sunset_mobs.notransform = TRUE
+		sunset_mobs.ghostize(FALSE)
+		sunset_mobs.moveToNullspace()
 
 	// Now that mobs are stowed, delete the shuttle
 	jumpToNullSpace()
