@@ -1,11 +1,24 @@
 /obj/item/sling
 	name = "sling"
 	desc = "Historically, skilled slingers could put as much force behind a projectile as a modern .45 magnum, unfortunatly spacemen just don't have the technique down."
-	icon = 'icons/obj/toys/plushes.dmi'
-	icon_state = "debug"
+	icon = 'icons/obj/weapons/sling.dmi'
+	icon_state = "sling"
+	lefthand_file = 'icons/mob/inhands/weapons/thrown_lefthand.dmi'
+	righthand_file = 'icons/mob/inhands/weapons/thrown_righthand.dmi'
+	inhand_icon_state = "sling"
 	w_class = WEIGHT_CLASS_SMALL
 	var/swinging = FALSE
 	var/obj/item/ammo_casing/sling_stone/loaded_stone
+
+/obj/item/sling/update_icon_state()
+	. = ..()
+	if(loaded_stone)
+		icon_state = "sling_loaded"
+		if(swinging)
+			inhand_icon_state = "sling_swinging"
+			return
+	icon_state = "sling"
+	inhand_icon_state = "sling"
 
 /obj/item/sling/afterattack(atom/target, mob/living/user, flag, params)
 	if(loaded_stone && swinging)
@@ -23,8 +36,10 @@
 /obj/item/sling/proc/start_swinging(mob/living/slinger)
 	if(!loaded_stone)
 		slinger.balloon_alert(slinger, "can't swing without ammo!")
+		return
 	if(swinging)
 		slinger.balloon_alert(slinger, "Already swinging!")
+		return
 	else
 		slinger.balloon_alert(slinger, "starting swing...")
 		if(do_after(slinger, 2 SECONDS, src, list(IGNORE_USER_LOC_CHANGE, IGNORE_TARGET_LOC_CHANGE)))
@@ -33,6 +48,7 @@
 			slinger.balloon_alert(slinger, "swinging active")
 			swinging = TRUE
 			RegisterSignals(src, list(COMSIG_ITEM_EQUIPPED, COMSIG_ITEM_DROPPED), PROC_REF(stop_swinging))
+			update_icon_state()
 
 /obj/item/sling/proc/stop_swinging(mob/living/slinger)
 	SIGNAL_HANDLER
@@ -40,6 +56,7 @@
 	STOP_PROCESSING(SSobj, src)
 	swinging = FALSE
 	UnregisterSignal(src, list(COMSIG_ITEM_EQUIPPED, COMSIG_ITEM_DROPPED))
+	update_icon_state()
 
 /obj/item/sling/process(seconds_per_tick)
 	playsound(src, 'sound/weapons/bulletflyby2.ogg', 25, FALSE)
@@ -59,6 +76,8 @@
 		user.transferItemToLoc(stone, src)
 		loaded_stone = stone
 		to_chat(user, span_notice("You load the stone into the sling."))
+		update_icon_state()
+
 
 /obj/item/storage/belt/sling_pouch
 	name = "Sling Pouch"
@@ -83,13 +102,21 @@
 
 /obj/item/ammo_casing/sling_stone
 	name = "stone"
+	icon = 'icons/obj/weapons/sling.dmi'
+	icon_state = "stone"
 	desc = "A small stone, don't put it in your mouth."
 	projectile_type =/obj/projectile/sling_stone
 	is_cased_ammo = FALSE
 
+/obj/item/ammo_casing/sling_stone/update_icon_state()
+	..()
+	icon_state = base_icon_state
+
 /obj/projectile/sling_stone
 	name = "stone"
-	damage = 20 // Historically, skilled slingers could put as much force behind a projectile as a modern .45 magnum, unfortunatly spacemen just don't have the technique down
+	icon = 'icons/obj/weapons/sling.dmi'
+	icon_state = "stone"
+	damage = 20
 	damage_type = BRUTE
 	armor_flag = BULLET
 
