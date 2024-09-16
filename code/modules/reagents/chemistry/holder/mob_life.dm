@@ -61,7 +61,12 @@
 		if(owner.reagent_check(reagent, seconds_per_tick, times_fired))
 			return
 		if(liverless && !reagent.self_consuming) //need to be metabolized
-			return
+			if(istype(reagent, /datum/reagent/toxin))
+				var/datum/reagent/toxin/toxic_reagent = reagent
+				if(!toxic_reagent.has_finisher_effect) ///If we have a finisher effect, we need to stay for an extra tick. Don't worry, they won't have to worry about a metabolism for long
+					return
+			else
+				return
 		if(!reagent.metabolizing)
 			reagent.metabolizing = TRUE
 			reagent.on_mob_metabolize(owner)

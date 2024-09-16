@@ -16,6 +16,12 @@
 	var/silent_toxin = FALSE
 	///The afflicted must be above this health value in order for the toxin to deal damage
 	var/health_required = -100
+	///Does this poison have a finisher effect that triggures at a damage threshhold or on liver failure?
+	var/has_finisher_effect = FALSE
+	///How much damage is required to trigger the finisher?
+	var/finisher_threshhold = 80
+	///What type of damage is required to trigger the finisher?
+	var/finisher_damage_type = TOX
 
 // Are you a bad enough dude to poison your own plants?
 /datum/reagent/toxin/on_hydroponics_apply(obj/machinery/hydroponics/mytray, mob/user)
@@ -25,7 +31,26 @@
 	. = ..()
 	if(toxpwr && affected_mob.health > health_required)
 		if(affected_mob.adjustToxLoss(toxpwr * REM * normalise_creation_purity() * seconds_per_tick, updating_health = FALSE, required_biotype = affected_biotype))
-			return UPDATE_MOB_HEALTH
+			. = UPDATE_MOB_HEALTH
+
+	if(!has_finisher_effect)
+		return
+	var/working_liver = TRUE
+
+	if(affected_mob.get_organ_by_type(/obj/item/organ/internal/liver))
+		var/obj/item/organ/internal/liver/liver = affected_mob.get_organ_by_type(/obj/item/organ/internal/liver)
+		if(liver.organ_flags & ORGAN_FAILING) // our liver has failed
+			working_liver = FALSE
+	else // We don't have a liver
+		working_liver = FALSE
+
+	if(affected_mob.get_current_damage_of_type(finisher_damage_type) > finisher_threshhold || !working_liver && affected_mob.stat != DEAD)
+		finisher_effect(affected_mob)
+
+/datum/reagent/toxin/proc/finisher_effect(mob/living/carbon/affected_mob)
+	if(!HAS_TRAIT(affected_mob, TRAIT_NODEATH))
+		to_chat(affected_mob, span_userdanger("poison overwhelms your immune system!"))
+		affected_mob.reagents.remove_reagent(src.type, 100, safety = TRUE)
 
 /datum/reagent/toxin/amatoxin
 	name = "Amatoxin"
@@ -35,6 +60,10 @@
 	taste_description = "mushroom"
 	ph = 13
 	chemical_flags = REAGENT_CAN_BE_SYNTHESIZED
+	has_finisher_effect = TRUE
+
+/datum/reagent/toxin/amatoxin/finisher_effect(mob/living/carbon/affected_mob)
+	. = ..()
 
 /datum/reagent/toxin/mutagen
 	name = "Unstable Mutagen"
@@ -182,6 +211,12 @@
 	taste_description = "acid"
 	ph = 1.2
 	chemical_flags = REAGENT_CAN_BE_SYNTHESIZED
+	///Does this poison have a finisher effect that triggures at a damage threshhold or on liver failure?
+	has_finisher_effect = TRUE
+	///How much damage is required to trigger the finisher?
+	finisher_threshhold = 100
+	///What type of damage is required to trigger the finisher?
+	finisher_damage_type = OXY
 
 /datum/reagent/toxin/lexorin/on_mob_life(mob/living/carbon/affected_mob, seconds_per_tick, times_fired)
 	. = ..()
@@ -203,6 +238,22 @@
 /datum/reagent/toxin/lexorin/proc/block_breath(mob/living/source)
 	SIGNAL_HANDLER
 	return COMSIG_CARBON_BLOCK_BREATH
+
+/datum/reagent/toxin/lexorin/finisher_effect(mob/living/carbon/affected_mob)
+	. = ..()
+	if(affected_mob.get_organ_slot(ORGAN_SLOT_LUNGS))
+		var/obj/item/organ/internal/lungs/mob_lungs = affected_mob.get_organ_slot(ORGAN_SLOT_LUNGS)
+		affected_mob.add_splatter_floor(get_turf(affected_mob))
+		affected_mob.visible_message(
+			span_danger("[affected_mob] coughs up blood on [p_them()]self!"),
+			span_userdanger("You cough up a painful clump of blood and lung tissue, that can't be good."),
+		)
+		mob_lungs.apply_organ_damage(mob_lungs.maxHealth)
+		affected_mob.AdjustParalyzed(5 SECONDS)
+		affected_mob.playsound_local(affected_mob, 'sound/health/fastbeat.ogg', 65)
+		addtimer(CALLBACK(affected_mob, TYPE_PROC_REF(/mob/living/carbon, adjustOxyLoss), 50), 5 SECONDS)
+		addtimer(CALLBACK(affected_mob, TYPE_PROC_REF(/mob/living/carbon, adjustToxLoss), 20), 5 SECONDS)
+
 
 /datum/reagent/toxin/slimejelly
 	name = "Slime Jelly"
@@ -458,6 +509,7 @@
 	ph = 11
 	inverse_chem = /datum/reagent/impurity/chloralax
 	chemical_flags = REAGENT_CAN_BE_SYNTHESIZED
+	has_finisher_effect = TRUE
 
 /datum/reagent/toxin/chloralhydrate/on_mob_life(mob/living/carbon/affected_mob, seconds_per_tick, times_fired)
 	. = ..()
@@ -471,6 +523,19 @@
 			affected_mob.Sleeping(40 * REM * normalise_creation_purity() * seconds_per_tick)
 			if(affected_mob.adjustToxLoss(1 * (current_cycle - 51) * REM * normalise_creation_purity() * seconds_per_tick, updating_health = FALSE, required_biotype = affected_biotype))
 				return UPDATE_MOB_HEALTH
+
+/datum/reagent/toxin/chloralhydrate/finisher_effect(mob/living/carbon/affected_mob) //Unlikely to ever happen, but if you get chloraled for this long you deserve a mercy killing
+	. = ..()
+	affected_mob.Sleeping(5 SECONDS)
+	to_chat(affected_mob, span_unconscious("Your body is so tired, even while you are still sleeping exhaustion claws through your nervous system. You can do nothing but fall towards the final slumber."))
+	addtimer(CALLBACK(affected_mob, TYPE_PROC_REF(/mob/living/carbon, death)),5 SECONDS)
+
+	var/obj/item/bodypart/head/face = affected_mob?.get_bodypart(BODY_ZONE_HEAD)
+	if(isnull(face))
+		return
+	var/datum/bodypart_overlay/simple/bags/sleepy_scars = new() //This isn't any ordinary tired, this is advanced tired.
+	face.add_bodypart_overlay(sleepy_scars)
+	affected_mob.update_body_parts()
 
 /datum/reagent/toxin/fakebeer //disguised as normal beer for use by emagged brobots
 	name = "B33r"
@@ -714,6 +779,7 @@
 	toxpwr = 1.25
 	ph = 9.3
 	chemical_flags = REAGENT_CAN_BE_SYNTHESIZED
+	has_finisher_effect = TRUE
 
 /datum/reagent/toxin/cyanide/on_mob_life(mob/living/carbon/affected_mob, seconds_per_tick, times_fired)
 	. = ..()
@@ -727,6 +793,21 @@
 		need_mob_update += affected_mob.adjustToxLoss(2*REM * normalise_creation_purity(), updating_health = FALSE, required_biotype = affected_biotype)
 	if(need_mob_update)
 		return UPDATE_MOB_HEALTH
+
+/datum/reagent/toxin/cyanide/finisher_effect(mob/living/carbon/affected_mob)
+	. = ..()
+	if(affected_mob.get_organ_slot(ORGAN_SLOT_LUNGS))
+		var/obj/item/organ/internal/lungs/mob_lungs = affected_mob.get_organ_slot(ORGAN_SLOT_LUNGS)
+		affected_mob.add_splatter_floor(get_turf(affected_mob))
+		affected_mob.visible_message(
+			span_danger("[affected_mob] coughs up blood on [p_them()]self!"),
+			span_userdanger("You cough up a painful clump of blood and lung tissue, that can't be good."),
+		)
+		mob_lungs.apply_organ_damage(mob_lungs.maxHealth)
+		affected_mob.AdjustParalyzed(5 SECONDS)
+		affected_mob.playsound_local(affected_mob, 'sound/health/fastbeat.ogg', 65)
+		addtimer(CALLBACK(affected_mob, TYPE_PROC_REF(/mob/living/carbon, adjustOxyLoss), 50), 5 SECONDS)
+		addtimer(CALLBACK(affected_mob, TYPE_PROC_REF(/mob/living/carbon, adjustToxLoss), 20), 5 SECONDS)
 
 /datum/reagent/toxin/bad_food
 	name = "Bad Food"
@@ -915,12 +996,26 @@
 	metabolization_rate = 0.06 * REAGENTS_METABOLISM
 	toxpwr = 1.75
 	chemical_flags = REAGENT_CAN_BE_SYNTHESIZED
+	has_finisher_effect = TRUE
+	finisher_threshhold = 80 //This is likely only to ever be triggered in a way that matters  by liver failure because alot of the damage from this toxin comes from the losebreath
 
 /datum/reagent/toxin/coniine/on_mob_life(mob/living/carbon/affected_mob, seconds_per_tick, times_fired)
 	. = ..()
 	if(affected_mob.losebreath < 5)
 		affected_mob.losebreath = min(affected_mob.losebreath + 5 * REM * seconds_per_tick, 5)
 		return UPDATE_MOB_HEALTH
+
+/datum/reagent/toxin/coniine/finisher_effect(mob/living/carbon/affected_mob)
+	. = ..()
+	if(affected_mob.get_organ_slot(BRAIN))
+	to_chat(affected_mob, span_userdanger("You feel the horifying sensation of your blood brain bairer being disolved, exposing your brain to your poisonous blood, your eyes leak puss!"))
+		affected_mob.visible_message(
+			span_danger("[affected_mob] eyes begin leaking puss!"),
+		)
+		affected_mob.emote("scream")
+		affected_mob.AdjustParalyzed(5 SECONDS)	//As a rate an powerful chem, we have some allowance for particularly brutal effects.
+		addtimer(CALLBACK(affected_mob, TYPE_PROC_REF(/mob/living/carbon, adjustOrganLoss), ORGAN_SLOT_BRAIN, 200), 5 SECONDS)
+
 
 /datum/reagent/toxin/spewium
 	name = "Spewium"
@@ -962,6 +1057,7 @@
 	metabolization_rate = 0.125 * REAGENTS_METABOLISM
 	toxpwr = 1
 	chemical_flags = REAGENT_CAN_BE_SYNTHESIZED|REAGENT_NO_RANDOM_RECIPE
+	has_finisher_effect = TRUE
 
 /datum/reagent/toxin/curare/on_mob_life(mob/living/carbon/affected_mob, seconds_per_tick, times_fired)
 	. = ..()
@@ -969,6 +1065,16 @@
 		affected_mob.Paralyze(60 * REM * seconds_per_tick)
 	if(affected_mob.adjustOxyLoss(0.5*REM*seconds_per_tick, updating_health = FALSE, required_biotype = affected_biotype, required_respiration_type = affected_respiration_type))
 		return UPDATE_MOB_HEALTH
+
+
+/datum/reagent/toxin/curare/finisher_effect(mob/living/carbon/affected_mob)
+	. = ..()
+	affected_mob.stop_sound_channel(CHANNEL_HEARTBEAT)
+	affected_mob.playsound_local(affected_mob, 'sound/effects/singlebeat.ogg', 100, FALSE, use_reverb = FALSE)
+	affected_mob.visible_message(span_danger("[affected_mob] clutches at [affected_mob.p_their()] chest!"), \
+								span_userdanger("Your heart has been paralyzed by the poison!"))
+	affected_mob.adjustStaminaLoss(60, FALSE)
+	affected_mob.set_heartattack(TRUE)
 
 /datum/reagent/toxin/heparin //Based on a real-life anticoagulant. I'm not a doctor, so this won't be realistic.
 	name = "Heparin"
@@ -1171,6 +1277,7 @@
 	color = "#AAAAAA77" //RGBA: 170, 170, 170, 77
 	creation_purity = REAGENT_STANDARD_PURITY
 	purity = REAGENT_STANDARD_PURITY
+	self_consuming = TRUE
 	toxpwr = 0
 	ph = 3.1
 	taste_description = "bone hurting"
